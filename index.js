@@ -21,9 +21,10 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    
     const database = client.db("taskify");
     const taskCollection = database.collection("tasks");
+    const userCollection = database.collection("users");
 
     app.get("/tasks/:email", async (req, res) => {
       const { email } = req.params;
@@ -47,8 +48,8 @@ async function run() {
       const { id } = req.params;
 
       try {
-        const result = await taskCollection.findOne({_id:new ObjectId(id)})
-        res.send(result)
+        const result = await taskCollection.findOne({ _id: new ObjectId(id) });
+        res.send(result);
       } catch (error) {
         res.status(500).send({ error: "Failed to fetch tasks" });
       }
@@ -62,6 +63,20 @@ async function run() {
         res.status(201).send(newTask);
       } catch (error) {
         res.status(500).send({ error: "Failed to add task" });
+      }
+    });
+    app.post("/user", async (req, res) => {
+      try {
+        const user = req.body;
+        const extUser = await userCollection.findOne({ email: user.email });
+        if (extUser) {
+          return 
+        }
+        const result = await userCollection.insertOne(user);
+
+        res.status(201).send(result);
+      } catch (error) {
+        res.status(500).send({ error: "Failed to add user" });
       }
     });
 
