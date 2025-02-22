@@ -29,14 +29,28 @@ async function run() {
       const { email } = req.params;
 
       try {
-        const todo = await taskCollection.find({ category: "todo", userEmail: email }).toArray();
+        const todo = await taskCollection
+          .find({ category: "todo", userEmail: email })
+          .toArray();
         const inProgress = await taskCollection
           .find({ category: "inProgress", userEmail: email })
           .toArray();
-        const done = await taskCollection.find({ category: "done", userEmail: email }).toArray();
-        res.json({ todo, inProgress, done });
+        const done = await taskCollection
+          .find({ category: "done", userEmail: email })
+          .toArray();
+        res.send({ todo, inProgress, done });
       } catch (error) {
-        res.status(500).json({ error: "Failed to fetch tasks" });
+        res.status(500).send({ error: "Failed to fetch tasks" });
+      }
+    });
+    app.get("/task/:id", async (req, res) => {
+      const { id } = req.params;
+
+      try {
+        const result = await taskCollection.findOne({_id:new ObjectId(id)})
+        res.send(result)
+      } catch (error) {
+        res.status(500).send({ error: "Failed to fetch tasks" });
       }
     });
 
@@ -45,9 +59,9 @@ async function run() {
         const task = req.body;
         const result = await taskCollection.insertOne(task);
         const newTask = { _id: result.insertedId, ...task };
-        res.status(201).json(newTask);
+        res.status(201).send(newTask);
       } catch (error) {
-        res.status(500).json({ error: "Failed to add task" });
+        res.status(500).send({ error: "Failed to add task" });
       }
     });
 
@@ -59,12 +73,28 @@ async function run() {
         const updateDoc = { $set: { category, order } };
         const result = await taskCollection.updateOne(filter, updateDoc);
         if (result.modifiedCount === 0) {
-          return res.status(404).json({ error: "Task not found" });
+          return res.status(404).send({ error: "Task not found" });
         }
         const updatedTask = await taskCollection.findOne(filter);
-        res.json(updatedTask);
+        res.send(updatedTask);
       } catch (error) {
-        res.status(500).json({ error: "Failed to update task order" });
+        res.status(500).send({ error: "Failed to update task order" });
+      }
+    });
+    app.put("/tasks/update/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { title, description } = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = { $set: { title, description } };
+        const result = await taskCollection.updateOne(filter, updateDoc);
+        if (result.modifiedCount === 0) {
+          return res.status(404).send({ error: "Task not found" });
+        }
+        const updatedTask = await taskCollection.findOne(filter);
+        res.send(updatedTask);
+      } catch (error) {
+        res.status(500).send({ error: "Failed to update task order" });
       }
     });
 
@@ -72,17 +102,17 @@ async function run() {
       try {
         const { id } = req.params;
         if (!ObjectId.isValid(id)) {
-          return res.status(400).json({ error: "Invalid ObjectId" });
+          return res.status(400).send({ error: "Invalid ObjectId" });
         }
         const result = await taskCollection.deleteOne({
           _id: new ObjectId(id),
         });
         if (result.deletedCount === 0) {
-          return res.status(404).json({ error: "Task not found" });
+          return res.status(404).send({ error: "Task not found" });
         }
-        res.json({ message: "Task deleted" });
+        res.send({ message: "Task deleted" });
       } catch (error) {
-        res.status(500).json({ error: "Failed to delete task" });
+        res.status(500).send({ error: "Failed to delete task" });
       }
     });
   } catch (error) {
